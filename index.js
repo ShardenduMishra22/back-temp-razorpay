@@ -13,7 +13,7 @@ import cors from "cors";
 const option = {
     origin: process.env.CORS_ORIGIN,
     methods: "GET,HEAD,PUT,PATCH,POST,DELETE",
-}
+};
 app.use(cors(option));
 
 const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
@@ -34,10 +34,21 @@ app.post("/webhook/razorpay", (req, res) => {
     if (signature !== expectedSignature) {
         return res.status(400).send("Invalid signature");
     }
-    console.log("Webhook event received:", req.body);
-    res.status(200).send("Webhook received");
-});
 
+    console.log("Webhook event received:", req.body);
+
+    // Check if the payment event is successful
+    const event = req.body.event; // event type (payment.capture)
+    const paymentStatus = req.body.payload.payment.entity.status; // Payment status (captured)
+
+    if (event === "payment.captured" && paymentStatus === "captured") {
+        // Payment was successful
+        return res.status(200).send({ status: "success", message: "Payment captured successfully" });
+    } else {
+        // Payment failed or other events
+        return res.status(200).send({ status: "failure", message: "Payment failed or event not handled" });
+    }
+});
 
 app.get("/", (req, res) => {
     return res.send("This Shit is Working");
